@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <title>Kayıtlı Tablolar</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -13,7 +14,7 @@
   <div class="button-container">
     <input type="date" id="search-date">
     <button onclick="loadData()">Verileri Getir</button>
-    <button onclick="downloadExcel()">Excel İndir</button>
+    <button onclick="downloadPDF()">PDF İndir</button>
   </div>
 </div>
 
@@ -27,49 +28,37 @@
       return;
     }
 
-    // Fetch the data from localStorage
     const storedData = JSON.parse(localStorage.getItem('tables') || '{}')[date];
     const tablesContainer = document.getElementById('tables-container');
     tablesContainer.innerHTML = '';
 
     if (storedData) {
       const table = document.createElement('table');
+      table.style.width = "100%";
+      table.border = "1";
+      
       const thead = document.createElement('thead');
       const tbody = document.createElement('tbody');
 
-      // Create table header
       const headerRow1 = document.createElement('tr');
       const headerRow2 = document.createElement('tr');
       headerRow1.innerHTML = `
         <th rowspan="2">#</th>
-        <th colspan="4" class="group-header">Toroman</th>
-        <th colspan="4" class="group-header">Küçük</th>
-        <th colspan="4" class="group-header">Keş</th>
-        <th colspan="4" class="group-header">Çete</th>
+        <th colspan="4">Toroman</th>
+        <th colspan="4">Küçük</th>
+        <th colspan="4">Keş</th>
+        <th colspan="4">Çete</th>
       `;
       headerRow2.innerHTML = `
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
+        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
       `;
 
       thead.appendChild(headerRow1);
       thead.appendChild(headerRow2);
 
-      // Create table body
       storedData.forEach((row, rowIndex) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${rowIndex + 1}</td>`;
@@ -89,80 +78,50 @@
     }
   }
 
-  function downloadExcel() {
-    const date = document.getElementById('search-date').value;
-    if (!date) {
-      alert('Lütfen bir tarih girin.');
+  function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const elementHTML = document.getElementById('tables-container');
+
+    // Tarihi Al ve Formatla
+    const dateInput = document.getElementById('search-date').value;
+    if (!dateInput) {
+      alert("Lütfen önce bir tarih seçin!");
       return;
     }
+    const formattedDate = formatDate(dateInput);
 
-    const table = document.querySelector('#tables-container table');
-    if (!table) {
-      alert('İndirilecek tablo bulunamadı.');
-      return;
-    }
+    // **Türkçe Karakter Sorununu Çözmek için Font Ayarlıyoruz**
+    doc.setFont("times", "normal");
 
-    const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
-
-    // Apply styles
-    const ws = wb.Sheets["Sheet1"];
-    const range = XLSX.utils.decode_range(ws['!ref']);
+    // PDF Başlık ve Tarih Yazdır
+    doc.setFontSize(16);
+    doc.text("Kayıtlı Tablolar", 10, 20);
     
-    // Set column widths for mobile
-    ws['!cols'] = [
-      { wpx: 50 }, // #
-      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, // Toroman
-      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, // Küçük
-      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, // Keş
-      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }  // Çete
-    ];
+    doc.setFontSize(12);
+    doc.text(`Tarih: ${formattedDate}`, 10, 30);
 
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cell_address = {c: C, r: R};
-        const cell_ref = XLSX.utils.encode_cell(cell_address);
-        if (!ws[cell_ref]) continue;
-        ws[cell_ref].s = {
-          border: {
-            top: { style: "thin", color: { rgb: "000000" } },
-            bottom: { style: "thin", color: { rgb: "000000" } },
-            left: { style: "thin", color: { rgb: "000000" } },
-            right: { style: "thin", color: { rgb: "000000" } }
-          },
-          alignment: {
-            horizontal: "center",
-            vertical: "center"
-          },
-          font: {
-            name: "Arial",
-            sz: 12,
-            bold: R === 0 || R === 1
-          },
-          fill: R === 0 || R === 1 ? { fgColor: { rgb: "000000" } } : {}
-        };
-      }
-    }
+    html2canvas(elementHTML, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 190;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let position = 40;
 
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-
-    const s2ab = s => {
-      const buf = new ArrayBuffer(s.length);
-      const view = new Uint8Array(buf);
-      for (let i = 0; i < s.length; i++) {
-        view[i] = s.charCodeAt(i) & 0xFF;
-      }
-      return buf;
-    };
-
-    saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), `${date}_tablo.xlsx`);
+      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      doc.save(`Tablo_${formattedDate}.pdf`);
+    }).catch(error => {
+      console.error('PDF oluşturulurken hata oluştu:', error);
+    });
   }
 
-  // Include FileSaver.js for saving files
-  (function() {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js';
-    document.head.appendChild(script);
-  })();
+  function formatDate(dateString) {
+    const months = [
+      "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+      "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
+    ];
+    const date = new Date(dateString);
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  }
 </script>
 
 </body>
