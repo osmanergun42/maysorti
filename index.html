@@ -2,12 +2,10 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Üretim Takip Tablosu</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 10px;
+      font-family: Arial;
     }
     table {
       width: 100%;
@@ -20,29 +18,32 @@
     }
     th.group-header {
       background-color: #cceeff;
-      font-size: 16px;
+      font-size: 18px;
     }
     th.sub-header {
       background-color: #e6f7ff;
       font-weight: normal;
       font-size: 14px;
     }
-    td input, td select {
+    td input {
       width: 100%;
       box-sizing: border-box;
       padding: 4px;
     }
-    .button-container {
+    .add-button-row td {
+      text-align: center;
+      padding: 10px;
+    }
+    .header-container {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 10px;
     }
-    .button-container button {
-      padding: 8px 12px;
-      font-size: 14px;
+    .button-container {
+      display: flex;
+      gap: 10px;
     }
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -51,6 +52,7 @@
       top: 0;
       width: 100%;
       height: 100%;
+      overflow: auto;
       background-color: rgba(0,0,0,0.4);
       padding-top: 60px;
     }
@@ -71,43 +73,17 @@
       color: black;
       cursor: pointer;
     }
-    /* Mobil Uyum */
-    @media (max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
-      thead {
-        display: none;
-      }
-      tr {
-        margin-bottom: 10px;
-        border: 1px solid #ccc;
-        padding: 10px;
-      }
-      td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px;
-        border: none;
-        border-bottom: 1px solid #ddd;
-      }
-      td:before {
-        content: attr(data-label);
-        font-weight: bold;
-      }
-    }
   </style>
+  <script src="index.js" defer></script>
 </head>
 <body>
 
-<h2>Üretim Takip Tablosu</h2>
-
-<div class="button-container">
-  <button onclick="window.location.href='ürün.html'">Ürün Ekle</button>
-  <button onclick="openModal()">Kaydet</button>
-  <button onclick="window.location.href='sortiler.html'">Sortiler</button>
-  <button onclick="downloadPDF()">PDF İndir</button>
+<div class="header-container">
+  <h2>Üretim Takip Tablosu</h2>
+  <div class="button-container">
+    <button onclick="openModal()">Kaydet</button>
+    <button onclick="window.location.href='sortiler.html'">Sortiler</button>
+  </div>
 </div>
 
 <table id="group-table">
@@ -139,6 +115,13 @@
     </tr>
   </thead>
   <tbody id="table-body"></tbody>
+  <tfoot>
+    <tr class="add-button-row">
+      <td colspan="17">
+        <button onclick="addRow()">+</button>
+      </td>
+    </tr>
+  </tfoot>
 </table>
 
 <!-- Modal -->
@@ -148,56 +131,9 @@
     <h3>Kayıt Tarihi Girin</h3>
     <input type="date" id="save-date" />
     <br><br>
-    <button onclick="resetTable()">Kaydet</button>
+    <button onclick="saveData()">Kaydet</button>
   </div>
 </div>
 
-<!-- PDF ve JS İşlevleri -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-
-<script>
-  function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape' });
-
-    doc.text("Üretim Takip Tablosu", 14, 10);
-
-    const table = document.getElementById("group-table");
-    const data = [];
-    const headers = [];
-
-    table.querySelectorAll("thead tr th").forEach(th => headers.push(th.innerText));
-    data.push(headers);
-
-    table.querySelectorAll("tbody tr").forEach(tr => {
-      const row = [];
-      tr.querySelectorAll("td select, td input").forEach(input => row.push(input.value));
-      data.push(row);
-    });
-
-    doc.autoTable({
-      head: [headers],
-      body: data.slice(1),
-      startY: 20,
-      styles: { fontSize: 8 },
-      columnStyles: {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 25 }, 2: { cellWidth: 25 }, 3: { cellWidth: 30 }, 4: { cellWidth: 20 },
-        5: { cellWidth: 25 }, 6: { cellWidth: 25 }, 7: { cellWidth: 30 }, 8: { cellWidth: 20 },
-        9: { cellWidth: 25 }, 10: { cellWidth: 25 }, 11: { cellWidth: 30 }, 12: { cellWidth: 20 },
-        13: { cellWidth: 25 }, 14: { cellWidth: 25 }, 15: { cellWidth: 30 }, 16: { cellWidth: 20 }
-      },
-      margin: { top: 15 }
-    });
-
-    doc.save("Uretim_Takip_Tablosu.pdf");
-  }
-
-  function openModal() { document.getElementById("myModal").style.display = "block"; }
-  function closeModal() { document.getElementById("myModal").style.display = "none"; }
-</script>
-
 </body>
 </html>
-
