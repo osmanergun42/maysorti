@@ -230,6 +230,32 @@
 
   window.onload = loadData;
 </script>
+  <!-- PDF İndir Butonu -->
+<button onclick="downloadPDF()">PDF İndir</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+  async function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Tabloyu yakalamak için html2canvas kullanıyoruz
+    const table = document.getElementById("group-table");
+    const canvas = await html2canvas(table);
+    const imgData = canvas.toDataURL("image/png");
+
+    // PDF'ye resmi ekleyelim
+    const imgWidth = 190;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    doc.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+
+    // PDF'yi indir
+    doc.save("uretim_takip_tablosu.pdf");
+  }
+</script>
+
 
 </body>
 </html>
