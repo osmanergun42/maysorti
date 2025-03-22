@@ -1,39 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <title>Kayıtlı Tablolar</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    body {
-      font-family: Arial;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    th, td {
-      border: 1px solid #999;
-      padding: 6px;
-      text-align: center;
-    }
-    th {
-      background-color: #cceeff;
-    }
-    .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .button-container {
-      display: flex;
-      gap: 10px;
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -71,28 +42,28 @@
       const headerRow2 = document.createElement('tr');
       headerRow1.innerHTML = `
         <th rowspan="2">#</th>
-        <th colspan="4">Toroman</th>
-        <th colspan="4">Küçük</th>
-        <th colspan="4">Keş</th>
-        <th colspan="4">Çete</th>
+        <th colspan="4" class="group-header">Toroman</th>
+        <th colspan="4" class="group-header">Küçük</th>
+        <th colspan="4" class="group-header">Keş</th>
+        <th colspan="4" class="group-header">Çete</th>
       `;
       headerRow2.innerHTML = `
-        <th>Giriş</th>
-        <th>Çıkış</th>
-        <th>Ürün</th>
-        <th>Kg</th>
-        <th>Giriş</th>
-        <th>Çıkış</th>
-        <th>Ürün</th>
-        <th>Kg</th>
-        <th>Giriş</th>
-        <th>Çıkış</th>
-        <th>Ürün</th>
-        <th>Kg</th>
-        <th>Giriş</th>
-        <th>Çıkış</th>
-        <th>Ürün</th>
-        <th>Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
       `;
 
       thead.appendChild(headerRow1);
@@ -136,6 +107,16 @@
     // Apply styles
     const ws = wb.Sheets["Sheet1"];
     const range = XLSX.utils.decode_range(ws['!ref']);
+    
+    // Set column widths for mobile
+    ws['!cols'] = [
+      { wpx: 50 }, // #
+      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, // Toroman
+      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, // Küçük
+      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, // Keş
+      { wpx: 100 }, { wpx: 100 }, { wpx: 100 }, { wpx: 100 }  // Çete
+    ];
+
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cell_address = {c: C, r: R};
@@ -154,10 +135,10 @@
           },
           font: {
             name: "Arial",
-            sz: 10,
+            sz: 12,
             bold: R === 0 || R === 1
           },
-          fill: R === 0 || R === 1 ? { fgColor: { rgb: "cceeff" } } : {}
+          fill: R === 0 || R === 1 ? { fgColor: { rgb: "000000" } } : {}
         };
       }
     }
