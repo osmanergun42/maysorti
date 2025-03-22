@@ -1,12 +1,19 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <title>Üretim Takip Tablosu</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 100%;
+      overflow-x: auto;
     }
     table {
       width: 100%;
@@ -16,34 +23,34 @@
       border: 1px solid #999;
       padding: 6px;
       text-align: center;
+      font-size: 14px;
     }
     th.group-header {
       background-color: #cceeff;
-      font-size: 18px;
+      font-size: 16px;
     }
     th.sub-header {
       background-color: #e6f7ff;
-      font-weight: normal;
-      font-size: 14px;
+      font-size: 12px;
     }
     td input, td select {
       width: 100%;
       box-sizing: border-box;
       padding: 4px;
     }
-    .add-button-row td {
-      text-align: center;
-      padding: 10px;
-    }
     .header-container {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
       margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f1f1f1;
     }
     .button-container {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
+      justify-content: center;
     }
     .modal {
       display: none;
@@ -57,11 +64,12 @@
       padding-top: 60px;
     }
     .modal-content {
-      background-color: #fefefe;
+      background-color: #fff;
       margin: 5% auto;
       padding: 20px;
       border: 1px solid #888;
-      width: 300px;
+      width: 80%;
+      max-width: 300px;
     }
     .close {
       color: #aaa;
@@ -73,6 +81,21 @@
       color: black;
       cursor: pointer;
     }
+
+    /* Mobil Uyumluluk */
+    @media (max-width: 768px) {
+      th, td {
+        font-size: 12px;
+        padding: 4px;
+      }
+      .button-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .modal-content {
+        width: 90%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -83,46 +106,49 @@
     <button onclick="window.location.href='ürün.html'">Ürün Ekle</button>
     <button onclick="openModal()">Kaydet</button>
     <button onclick="window.location.href='sortiler.html'">Sortiler</button>
+    <button onclick="downloadPDF()">PDF İndir</button>
   </div>
 </div>
 
-<table id="group-table">
-  <thead>
-    <tr>
-      <th rowspan="2">#</th>
-      <th class="group-header" colspan="4">Toroman</th>
-      <th class="group-header" colspan="4">Küçük</th>
-      <th class="group-header" colspan="4">Keş</th>
-      <th class="group-header" colspan="4">Çete</th>
-    </tr>
-    <tr>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-    </tr>
-  </thead>
-  <tbody id="table-body"></tbody>
-  <tfoot>
-    <tr class="add-button-row">
-      <td colspan="17">
-        <button onclick="addRow()">+</button>
-      </td>
-    </tr>
-  </tfoot>
-</table>
+<div class="container">
+  <table id="group-table">
+    <thead>
+      <tr>
+        <th rowspan="2">#</th>
+        <th class="group-header" colspan="4">Toroman</th>
+        <th class="group-header" colspan="4">Küçük</th>
+        <th class="group-header" colspan="4">Keş</th>
+        <th class="group-header" colspan="4">Çete</th>
+      </tr>
+      <tr>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+        <th class="sub-header">Giriş</th>
+        <th class="sub-header">Çıkış</th>
+        <th class="sub-header">Ürün</th>
+        <th class="sub-header">Kg</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="17">
+          <button onclick="addRow()">+</button>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
 
 <!-- Modal -->
 <div id="myModal" class="modal">
@@ -136,53 +162,15 @@
 </div>
 
 <script>
-  const products = ['top', 'alt', 'orta'];
-
-  function createTimeSelect(value = '') {
-    const select = document.createElement('select');
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 5) {
-        const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        const option = document.createElement('option');
-        option.value = time;
-        option.textContent = time;
-        if (time === value) option.selected = true;
-        select.appendChild(option);
-      }
-    }
-    return select;
+  async function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const canvas = await html2canvas(document.querySelector(".container"));
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
+    doc.save("uretim_takip_tablosu.pdf");
   }
 
-  function createProductSelect(value = '') {
-    const select = document.createElement('select');
-    products.forEach(prod => {
-      const option = document.createElement('option');
-      option.value = prod;
-      option.text = prod;
-      if (prod === value) option.selected = true;
-      select.appendChild(option);
-    });
-    return select;
-  }
-
-  function createCell(type, value = '') {
-    const td = document.createElement('td');
-    if (type === 'time') {
-      td.appendChild(createTimeSelect(value));
-    } else if (type === 'product') {
-      td.appendChild(createProductSelect(value));
-    } else {
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.step = '0.01';
-      input.value = value;
-      input.addEventListener('input', saveData);
-      td.appendChild(input);
-    }
-    return td;
-  }
-
-  function addRow(data = []) {
+  function addRow() {
     const tbody = document.getElementById('table-body');
     const tr = document.createElement('tr');
 
@@ -191,8 +179,12 @@
     tr.appendChild(tdIndex);
 
     for (let i = 0; i < 16; i++) {
-      const value = data[i] || '';
-      tr.appendChild(createCell(i % 4 === 0 || i % 4 === 1 ? 'time' : i % 4 === 2 ? 'product' : 'number', value));
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.addEventListener('input', saveData);
+      td.appendChild(input);
+      tr.appendChild(td);
     }
 
     tbody.appendChild(tr);
@@ -203,7 +195,7 @@
     const rows = [];
     document.querySelectorAll('#table-body tr').forEach(tr => {
       const row = [];
-      tr.querySelectorAll('td select, td input').forEach(input => row.push(input.value));
+      tr.querySelectorAll('td input').forEach(input => row.push(input.value));
       rows.push(row);
     });
     localStorage.setItem('tableData', JSON.stringify(rows));
@@ -230,32 +222,8 @@
 
   window.onload = loadData;
 </script>
-  <!-- PDF İndir Butonu -->
-<button onclick="downloadPDF()">PDF İndir</button>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<script>
-  async function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Tabloyu yakalamak için html2canvas kullanıyoruz
-    const table = document.getElementById("group-table");
-    const canvas = await html2canvas(table);
-    const imgData = canvas.toDataURL("image/png");
-
-    // PDF'ye resmi ekleyelim
-    const imgWidth = 190;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    doc.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
-
-    // PDF'yi indir
-    doc.save("uretim_takip_tablosu.pdf");
-  }
-</script>
-
 
 </body>
 </html>
+
+      
