@@ -1,229 +1,63 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>Üretim Takip Tablosu</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      width: 100%;
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #999;
-      padding: 6px;
-      text-align: center;
-      font-size: 14px;
-    }
-    th.group-header {
-      background-color: #cceeff;
-      font-size: 16px;
-    }
-    th.sub-header {
-      background-color: #e6f7ff;
-      font-size: 12px;
-    }
-    td input, td select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 4px;
-    }
-    .header-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 10px;
-      background-color: #f1f1f1;
-    }
-    .button-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.4);
-      padding-top: 60px;
-    }
-    .modal-content {
-      background-color: #fff;
-      margin: 5% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      width: 80%;
-      max-width: 300px;
-    }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .close:hover {
-      color: black;
-      cursor: pointer;
-    }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
-    /* Mobil Uyumluluk */
-    @media (max-width: 768px) {
-      th, td {
-        font-size: 12px;
-        padding: 4px;
-      }
-      .button-container {
-        flex-direction: column;
-        align-items: center;
-      }
-      .modal-content {
-        width: 90%;
-      }
-    }
-  </style>
-</head>
-<body>
-
-<div class="header-container">
-  <h2>Üretim Takip Tablosu</h2>
-  <div class="button-container">
-    <button onclick="window.location.href='ürün.html'">Ürün Ekle</button>
-    <button onclick="openModal()">Kaydet</button>
-    <button onclick="window.location.href='sortiler.html'">Sortiler</button>
-    <button onclick="downloadPDF()">PDF İndir</button>
-  </div>
-</div>
-
-<div class="container">
-  <table id="group-table">
-    <thead>
-      <tr>
-        <th rowspan="2">#</th>
-        <th class="group-header" colspan="4">Toroman</th>
-        <th class="group-header" colspan="4">Küçük</th>
-        <th class="group-header" colspan="4">Keş</th>
-        <th class="group-header" colspan="4">Çete</th>
-      </tr>
-      <tr>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-        <th class="sub-header">Giriş</th>
-        <th class="sub-header">Çıkış</th>
-        <th class="sub-header">Ürün</th>
-        <th class="sub-header">Kg</th>
-      </tr>
-    </thead>
-    <tbody id="table-body"></tbody>
-    <tfoot>
-      <tr>
-        <td colspan="17">
-          <button onclick="addRow()">+</button>
-        </td>
-      </tr>
-    </tfoot>
-  </table>
-</div>
-
-<!-- Modal -->
-<div id="myModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal()">&times;</span>
-    <h3>Kayıt Tarihi Girin</h3>
-    <input type="date" id="save-date" />
-    <br><br>
-    <button onclick="resetTable()">Kaydet</button>
-  </div>
-</div>
+<button onclick="downloadPDF()">PDF İndir</button>
 
 <script>
-  async function downloadPDF() {
+  function downloadPDF() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const canvas = await html2canvas(document.querySelector(".container"));
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
-    doc.save("uretim_takip_tablosu.pdf");
-  }
+    const doc = new jsPDF({ orientation: 'landscape' }); // Sayfa yatay
 
-  function addRow() {
-    const tbody = document.getElementById('table-body');
-    const tr = document.createElement('tr');
+    doc.text("Üretim Takip Tablosu", 14, 10);
 
-    const tdIndex = document.createElement('td');
-    tdIndex.textContent = tbody.rows.length + 1;
-    tr.appendChild(tdIndex);
+    const table = document.getElementById("group-table");
+    const data = [];
+    const headers = [];
 
-    for (let i = 0; i < 16; i++) {
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.addEventListener('input', saveData);
-      td.appendChild(input);
-      tr.appendChild(td);
-    }
-
-    tbody.appendChild(tr);
-    saveData();
-  }
-
-  function saveData() {
-    const rows = [];
-    document.querySelectorAll('#table-body tr').forEach(tr => {
-      const row = [];
-      tr.querySelectorAll('td input').forEach(input => row.push(input.value));
-      rows.push(row);
+    // Tablo başlıklarını al
+    table.querySelectorAll("thead tr th").forEach(th => {
+      headers.push(th.innerText);
     });
-    localStorage.setItem('tableData', JSON.stringify(rows));
-  }
 
-  function loadData() {
-    const data = JSON.parse(localStorage.getItem('tableData') || '[]');
-    data.forEach(row => addRow(row));
-  }
+    data.push(headers); // Başlıkları ekle
 
-  function resetTable() {
-    localStorage.removeItem('tableData');
-    document.getElementById('table-body').innerHTML = '';
-    closeModal();
-  }
+    // Tablo verilerini al
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const row = [];
+      tr.querySelectorAll("td").forEach(td => {
+        const input = td.querySelector("input, select");
+        row.push(input ? input.value : td.innerText);
+      });
+      data.push(row);
+    });
 
-  function openModal() {
-    document.getElementById("myModal").style.display = "block";
-  }
+    doc.autoTable({
+      head: [headers],
+      body: data.slice(1), // İlk satır başlık olduğu için veri kısmını alıyoruz
+      startY: 20,
+      styles: { fontSize: 8 }, // Yazı fontu küçültüldü
+      columnStyles: {
+        0: { cellWidth: 10 },   // # sütunu küçük tut
+        1: { cellWidth: 20 },   // Giriş
+        2: { cellWidth: 20 },   // Çıkış
+        3: { cellWidth: 30 },   // Ürün
+        4: { cellWidth: 20 },   // Kg
+        5: { cellWidth: 20 },   // Giriş
+        6: { cellWidth: 20 },   // Çıkış
+        7: { cellWidth: 30 },   // Ürün
+        8: { cellWidth: 20 },   // Kg
+        9: { cellWidth: 20 },   // Giriş
+        10: { cellWidth: 20 },  // Çıkış
+        11: { cellWidth: 30 },  // Ürün
+        12: { cellWidth: 20 },  // Kg
+        13: { cellWidth: 20 },  // Giriş
+        14: { cellWidth: 20 },  // Çıkış
+        15: { cellWidth: 30 },  // Ürün
+        16: { cellWidth: 20 },  // Kg
+      },
+      margin: { top: 15 },
+    });
 
-  function closeModal() {
-    document.getElementById("myModal").style.display = "none";
+    doc.save("Uretim_Takip_Tablosu.pdf");
   }
-
-  window.onload = loadData;
 </script>
-
-</body>
-</html>
-
-      
