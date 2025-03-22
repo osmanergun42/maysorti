@@ -1,0 +1,188 @@
+```html name=sortiler.html
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kayıtlı Tablolar</title>
+  <style>
+    body {
+      font-family: Arial;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background-color: #cceeff;
+    }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .button-container {
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="header-container">
+  <h2>Kayıtlı Tablolar</h2>
+  <div class="button-container">
+    <input type="date" id="search-date">
+    <button onclick="loadData()">Verileri Getir</button>
+    <button onclick="downloadExcel()">Excel İndir</button>
+  </div>
+</div>
+
+<div id="tables-container"></div>
+
+<script>
+  function loadData() {
+    const date = document.getElementById('search-date').value;
+    if (!date) {
+      alert('Lütfen bir tarih girin.');
+      return;
+    }
+
+    // Fetch the data from localStorage
+    const storedData = JSON.parse(localStorage.getItem('tables') || '{}')[date];
+    const tablesContainer = document.getElementById('tables-container');
+    tablesContainer.innerHTML = '';
+
+    if (storedData) {
+      const table = document.createElement('table');
+      const thead = document.createElement('thead');
+      const tbody = document.createElement('tbody');
+
+      // Create table header
+      const headerRow1 = document.createElement('tr');
+      const headerRow2 = document.createElement('tr');
+      headerRow1.innerHTML = `
+        <th rowspan="2">#</th>
+        <th colspan="4">Toroman</th>
+        <th colspan="4">Küçük</th>
+        <th colspan="4">Keş</th>
+        <th colspan="4">Çete</th>
+      `;
+      headerRow2.innerHTML = `
+        <th>Giriş</th>
+        <th>Çıkış</th>
+        <th>Ürün</th>
+        <th>Kg</th>
+        <th>Giriş</th>
+        <th>Çıkış</th>
+        <th>Ürün</th>
+        <th>Kg</th>
+        <th>Giriş</th>
+        <th>Çıkış</th>
+        <th>Ürün</th>
+        <th>Kg</th>
+        <th>Giriş</th>
+        <th>Çıkış</th>
+        <th>Ürün</th>
+        <th>Kg</th>
+      `;
+
+      thead.appendChild(headerRow1);
+      thead.appendChild(headerRow2);
+
+      // Create table body
+      storedData.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${rowIndex + 1}</td>`;
+        row.forEach(cell => {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      tablesContainer.appendChild(table);
+    } else {
+      tablesContainer.innerHTML = '<p>Bu tarihte kayıtlı veri yok.</p>';
+    }
+  }
+
+  function downloadExcel() {
+    const date = document.getElementById('search-date').value;
+    if (!date) {
+      alert('Lütfen bir tarih girin.');
+      return;
+    }
+
+    const table = document.querySelector('#tables-container table');
+    if (!table) {
+      alert('İndirilecek tablo bulunamadı.');
+      return;
+    }
+
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+
+    // Apply styles
+    const ws = wb.Sheets["Sheet1"];
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_address = {c: C, r: R};
+        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        if (!ws[cell_ref]) continue;
+        ws[cell_ref].s = {
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          },
+          alignment: {
+            horizontal: "center",
+            vertical: "center"
+          },
+          font: {
+            name: "Arial",
+            sz: 10,
+            bold: R === 0 || R === 1
+          },
+          fill: R === 0 || R === 1 ? { fgColor: { rgb: "cceeff" } } : {}
+        };
+      }
+    }
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+
+    const s2ab = s => {
+      const buf = new ArrayBuffer(s.length);
+      const view = new Uint8Array(buf);
+      for (let i = 0; i < s.length; i++) {
+        view[i] = s.charCodeAt(i) & 0xFF;
+      }
+      return buf;
+    };
+
+    saveAs(new Blob([s2ab(wbout)], { type: "application/octet-stream" }), `${date}_tablo.xlsx`);
+  }
+
+  // Include FileSaver.js for saving files
+  (function() {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js';
+    document.head.appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
+```
