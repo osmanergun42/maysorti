@@ -11,7 +11,7 @@ function createCell(type, value = '') {
         input.step = '0.01';
     }
 
-    input.value = value; // Önceki kaydedilen değeri atama
+    input.value = value; // Önceden kaydedilmiş veriyi yükler
     td.appendChild(input);
     return td;
 }
@@ -27,7 +27,7 @@ function addRow(data = []) {
     tr.appendChild(tdIndex);
 
     for (let i = 0; i < 4 * 4; i++) {
-        let value = data[i] || ''; // Eğer eski veri varsa, onu ekle
+        let value = data[i] || ''; // Eğer önceki veri varsa, onu ekler
         if (i % 4 === 0 || i % 4 === 1) {
             tr.appendChild(createCell('time', value));
         } else if (i % 4 === 2) {
@@ -48,7 +48,7 @@ function closeModal() {
     document.getElementById("myModal").style.display = "none";
 }
 
-function saveData() {
+async function saveData() {
     const date = document.getElementById("save-date").value;
     if (!date) {
         alert("Lütfen bir tarih girin.");
@@ -69,10 +69,29 @@ function saveData() {
         data.push(row);
     }
 
-    // Veriyi localStorage'a kaydet
+    // Veriyi localStorage’a kaydet
     localStorage.setItem('tableData', JSON.stringify(data));
     alert(`Veriler ${date} tarihinde kaydedildi.`);
     closeModal();
+
+    // Kaydedilen verileri sortiler.html sayfasına gönder
+    try {
+        const response = await fetch('sortiler.html', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ date, data })
+        });
+
+        if (response.ok) {
+            console.log("Veriler sortiler.html sayfasına başarıyla gönderildi.");
+        } else {
+            console.error("Veriler sortiler.html sayfasına gönderilemedi.");
+        }
+    } catch (error) {
+        console.error("Hata:", error);
+    }
 
     // Kaydettikten sonra tabloyu temizle
     document.getElementById("table-body").innerHTML = "";
