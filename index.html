@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Üretim Takip Tablosu</title>
+  <style>
+    body {
+      font-family: Arial;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 6px;
+      text-align: center;
+    }
+    th.group-header {
+      background-color: #cceeff;
+      font-size: 18px;
+    }
+    th.sub-header {
+      background-color: #e6f7ff;
+      font-weight: normal;
+      font-size: 14px;
+    }
+    td input, td select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px;
+    }
+    .add-button-row td {
+      text-align: center;
+      padding: 10px;
+    }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .button-container {
+      display: flex;
+      gap: 10px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+      padding-top: 60px;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 300px;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover {
+      color: black;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header-container">
+  <h2>Üretim Takip Tablosu</h2>
+  <div class="button-container">
+    <button onclick="window.location.href='ürün.html'">Ürün Ekle</button>
+    <button onclick="openModal()">Kaydet</button>
+    <button onclick="window.location.href='sortiler.html'">Sortiler</button>
+  </div>
+</div>
+
+<table id="group-table">
+  <thead>
+    <tr>
+      <th rowspan="2">#</th>
+      <th class="group-header" colspan="4">Toroman</th>
+      <th class="group-header" colspan="4">Küçük</th>
+      <th class="group-header" colspan="4">Keş</th>
+      <th class="group-header" colspan="4">Çete</th>
+    </tr>
+    <tr>
+      <th class="sub-header">Giriş</th>
+      <th class="sub-header">Çıkış</th>
+      <th class="sub-header">Ürün</th>
+      <th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th>
+      <th class="sub-header">Çıkış</th>
+      <th class="sub-header">Ürün</th>
+      <th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th>
+      <th class="sub-header">Çıkış</th>
+      <th class="sub-header">Ürün</th>
+      <th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th>
+      <th class="sub-header">Çıkış</th>
+      <th class="sub-header">Ürün</th>
+      <th class="sub-header">Kg</th>
+    </tr>
+  </thead>
+  <tbody id="table-body"></tbody>
+  <tfoot>
+    <tr class="add-button-row">
+      <td colspan="17">
+        <button onclick="addRow()">+</button>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<!-- Modal -->
+<div id="myModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3>Kayıt Tarihi Girin</h3>
+    <input type="date" id="save-date" />
+    <br><br>
+    <button onclick="saveDate()">Kaydet</button>
+  </div>
+</div>
+
+<script>
+  const products = ['top', 'alt', 'orta']; // örnek ürünler
+
+  function createTimeSelect() {
+    const select = document.createElement('select');
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 5) {
+        const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        const option = document.createElement('option');
+        option.value = time;
+        option.textContent = time;
+        select.appendChild(option);
+      }
+    }
+    return select;
+  }
+
+  function createProductSelect() {
+    const select = document.createElement('select');
+    products.forEach(prod => {
+      const option = document.createElement('option');
+      option.value = prod;
+      option.text = prod;
+      select.appendChild(option);
+    });
+    return select;
+  }
+
+  function createCell(type) {
+    const td = document.createElement('td');
+    if (type === 'time') {
+      td.appendChild(createTimeSelect());
+    } else if (type === 'product') {
+      td.appendChild(createProductSelect());
+    } else {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.step = '0.01';
+      td.appendChild(input);
+    }
+    return td;
+  }
+
+  function addRow() {
+    const tbody = document.getElementById('table-body');
+    const rowCount = tbody.rows.length + 1;
+    const tr = document.createElement('tr');
+
+    // Satır numarası
+    const tdIndex = document.createElement('td');
+    tdIndex.textContent = rowCount;
+    tr.appendChild(tdIndex);
+
+    for (let i = 0; i < 4 * 4; i++) {
+      if (i % 4 === 0 || i % 4 === 1) {
+        tr.appendChild(createCell('time'));
+      } else if (i % 4 === 2) {
+        tr.appendChild(createCell('product'));
+      } else {
+        tr.appendChild(createCell('number'));
+      }
+    }
+
+    tbody.appendChild(tr);
+  }
+
+  function openModal() {
+    document.getElementById("myModal").style.display = "block";
+  }
+
+  function closeModal() {
+    document.getElementById("myModal").style.display = "none";
+  }
+
+  function saveDate() {
+    const date = document.getElementById("save-date").value;
+    if (date) {
+      alert(`Veriler ${date} tarihinde kaydedildi.`);
+      closeModal();
+    } else {
+      alert("Lütfen bir tarih girin.");
+    }
+  }
+
+  window.onclick = function (event) {
+    if (event.target === document.getElementById("myModal")) {
+      closeModal();
+    }
+  }
+
+  // Sayfa yüklendiğinde 20 satır ekle
+  window.onload = () => {
+    for (let i = 0; i < 20; i++) addRow();
+  };
+</script>
+
+</body>
+</html>
