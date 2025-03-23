@@ -12,6 +12,7 @@ function createCell(type, value = '') {
     }
 
     input.value = value;
+    input.addEventListener('input', autoSaveTempData); // Otomatik kaydetme
     td.appendChild(input);
     return td;
 }
@@ -68,15 +69,12 @@ function saveData() {
         data.push(row);
     }
 
-    // 1. Bu veriyi "tableData-<date>" şeklinde sakla (opsiyonel)
     localStorage.setItem(`tableData-${date}`, JSON.stringify(data));
 
-    // 2. Tüm verileri tutan "tables" objesini güncelle
     let tables = JSON.parse(localStorage.getItem('tables')) || {};
     tables[date] = data;
     localStorage.setItem('tables', JSON.stringify(tables));
 
-    // 3. Tarih listesi güncelle (opsiyonel, kullanacaksan)
     let savedDates = JSON.parse(localStorage.getItem('savedDates')) || [];
     if (!savedDates.includes(date)) {
         savedDates.push(date);
@@ -86,10 +84,27 @@ function saveData() {
     alert(`Veriler ${date} tarihinde kaydedildi.`);
     closeModal();
     document.getElementById("table-body").innerHTML = "";
+    localStorage.removeItem('tableData-temp'); // Kaydettikten sonra geçici veriyi sil
 }
 
+function autoSaveTempData() {
+    const table = document.getElementById("group-table");
+    const rows = table.getElementsByTagName("tr");
+    const data = [];
 
-// Verileri yükle (sayfa açıldığında)
+    for (let i = 2; i < rows.length - 1; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+        const row = [];
+        for (let j = 1; j < cells.length; j++) {
+            const input = cells[j].getElementsByTagName("input")[0];
+            row.push(input ? input.value : cells[j].innerText);
+        }
+        data.push(row);
+    }
+
+    localStorage.setItem("tableData-temp", JSON.stringify(data));
+}
+
 function loadSavedData() {
     const savedData = JSON.parse(localStorage.getItem('tableData-temp')) || [];
 
