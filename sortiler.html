@@ -2,115 +2,160 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Kayıtlı Tablolar</title>
+  <title>Kayıtlı Tarihler</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    table {
+      width: 60%;
+      margin: auto;
+      border-collapse: collapse;
+    }
+    td, th {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+    tr:hover {
+      background-color: #f2f2f2;
+    }
+    h2 {
+      text-align: center;
+    }
+    button.download-btn {
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    /* PDF tablosu için özel stil */
+    .pdf-table, .pdf-table th, .pdf-table td {
+      border: 1px solid #000;
+      border-collapse: collapse;
+      font-size: 10px;
+      padding: 4px;
+      color: #000;
+      background-color: white;
+    }
+    .pdf-table th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-<div class="header-container">
-  <h2>Kayıtlı Tablolar</h2>
-  <div class="button-container">
-    <input type="date" id="search-date">
-    <button onclick="loadData()">Verileri Getir</button>
-    <button onclick="downloadPDF()">PDF İndir</button>
-  </div>
-</div>
+<h2>Kayıtlı Tarihler</h2>
+<table id="date-table">
+  <thead>
+    <tr>
+      <th>Tarih</th>
+      <th>İşlem</th>
+    </tr>
+  </thead>
+  <tbody id="date-body"></tbody>
+</table>
 
-<div id="tables-container"></div>
+<!-- Gizli tablo sadece PDF oluşturmak için -->
+<div id="hidden-table-container" style="display: none;"></div>
 
 <script>
-  function loadData() {
-    const date = document.getElementById('search-date').value;
-    if (!date) {
-      alert('Lütfen bir tarih girin.');
-      return;
-    }
+  const savedTables = JSON.parse(localStorage.getItem("tables") || "{}");
+  const dateBody = document.getElementById("date-body");
 
-    const storedData = JSON.parse(localStorage.getItem('tables') || '{}')[date];
-    const tablesContainer = document.getElementById('tables-container');
-    tablesContainer.innerHTML = '';
+  Object.keys(savedTables).sort().forEach(date => {
+    const tr = document.createElement("tr");
 
-    if (storedData) {
-      const table = document.createElement('table');
-      table.style.width = "100%";
-      table.border = "1";
-      
-      const thead = document.createElement('thead');
-      const tbody = document.createElement('tbody');
+    const tdDate = document.createElement("td");
+    tdDate.textContent = date;
 
-      const headerRow1 = document.createElement('tr');
-      const headerRow2 = document.createElement('tr');
-      headerRow1.innerHTML = `
-        <th rowspan="2">#</th>
-        <th colspan="4">Toroman</th>
-        <th colspan="4">Küçük</th>
-        <th colspan="4">Keş</th>
-        <th colspan="4">Çete</th>
-      `;
-      headerRow2.innerHTML = `
-        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
-        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
-        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
-        <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
-      `;
+    const tdAction = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.textContent = "PDF İndir";
+    btn.className = "download-btn";
+    btn.onclick = () => generatePDF(date);
 
-      thead.appendChild(headerRow1);
-      thead.appendChild(headerRow2);
+    tdAction.appendChild(btn);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdAction);
+    dateBody.appendChild(tr);
+  });
 
-      storedData.forEach((row, rowIndex) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${rowIndex + 1}</td>`;
-        row.forEach(cell => {
-          const td = document.createElement('td');
-          td.textContent = cell;
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
+  function generatePDF(date) {
+    const data = savedTables[date];
+    if (!data) return;
+
+    const container = document.getElementById("hidden-table-container");
+    container.innerHTML = "";
+
+    const table = document.createElement("table");
+    table.classList.add("pdf-table");
+    table.style.width = "100%";
+
+    const thead = document.createElement("thead");
+    const headerRow1 = document.createElement("tr");
+    const headerRow2 = document.createElement("tr");
+
+    headerRow1.innerHTML = `
+      <th rowspan="2">#</th>
+      <th colspan="4">Toroman</th>
+      <th colspan="4">Küçük</th>
+      <th colspan="4">Keş</th>
+      <th colspan="4">Çete</th>
+    `;
+    headerRow2.innerHTML = `
+      <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+      <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+      <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+      <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
+    `;
+
+    thead.appendChild(headerRow1);
+    thead.appendChild(headerRow2);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    data.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${i + 1}</td>`;
+      row.forEach(cell => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.appendChild(td);
       });
+      tbody.appendChild(tr);
+    });
 
-      table.appendChild(thead);
-      table.appendChild(tbody);
-      tablesContainer.appendChild(table);
-    } else {
-      tablesContainer.innerHTML = '<p>Bu tarihte kayıtlı veri yok.</p>';
-    }
-  }
+    table.appendChild(tbody);
+    container.appendChild(table);
 
-  function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const elementHTML = document.getElementById('tables-container');
+    // Tabloyu geçici olarak görünür yap
+    container.style.display = "block";
 
-    // Tarihi Al ve Formatla
-    const dateInput = document.getElementById('search-date').value;
-    if (!dateInput) {
-      alert("Lütfen önce bir tarih seçin!");
-      return;
-    }
-    const formattedDate = formatDate(dateInput);
+    html2canvas(container, { scale: 2 }).then(canvas => {
+      const imgData = canvas.toDataURL("image/png");
 
-    // **Türkçe Karakter Sorununu Çözmek için Font Ayarlıyoruz**
-    doc.setFont("times", "normal");
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("l", "mm", "a4"); // landscape yön
 
-    // PDF Başlık ve Tarih Yazdır
-    doc.setFontSize(16);
-    doc.text("Kayıtlı Tablolar", 10, 20);
-    
-    doc.setFontSize(12);
-    doc.text(`Tarih: ${formattedDate}`, 10, 30);
-
-    html2canvas(elementHTML, { scale: 2 }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 190;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const imgWidth = pageWidth - 20; // sağ/sol boşluklar
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let position = 40;
 
-      doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-      doc.save(`Tablo_${formattedDate}.pdf`);
+      doc.setFont("times", "normal");
+      doc.setFontSize(16);
+      doc.text("Kayıtlı Tablolar", 10, 20);
+      doc.setFontSize(12);
+      doc.text(`Tarih: ${formatDate(date)}`, 10, 30);
+
+      doc.addImage(imgData, "PNG", 10, 40, imgWidth, imgHeight);
+      doc.save(`Tablo_${date}.pdf`);
+
+      container.style.display = "none";
     }).catch(error => {
-      console.error('PDF oluşturulurken hata oluştu:', error);
+      console.error("PDF oluşturulurken hata:", error);
+      alert("PDF oluşturulurken bir hata oluştu.");
+      container.style.display = "none";
     });
   }
 
