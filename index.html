@@ -75,6 +75,10 @@
       color: black;
       cursor: pointer;
     }
+    #totals-row {
+      font-weight: bold;
+      background-color: #f4f4f4;
+    }
   </style>
 </head>
 <body>
@@ -83,7 +87,6 @@
   <h2>Üretim Takip Tablosu</h2>
   <div class="button-container">
     <button onclick="openModal()">Kaydet</button>
-
     <button onclick="window.location.href='sortiler.html'">Sortiler</button>
   </div>
 </div>
@@ -123,6 +126,16 @@
         <button onclick="addRow()">+</button>
       </td>
     </tr>
+    <tr id="totals-row">
+      <td colspan="4">Toroman Toplam</td>
+      <td id="toroman-total">0</td>
+      <td colspan="3">Küçük Toplam</td>
+      <td id="kucuk-total">0</td>
+      <td colspan="3">Keş Toplam</td>
+      <td id="kes-total">0</td>
+      <td colspan="3">Çete Toplam</td>
+      <td id="cete-total">0</td>
+    </tr>
   </tfoot>
 </table>
 
@@ -137,6 +150,24 @@
   </div>
 </div>
 
+<script>
+  function calculateTotals() {
+    let toroman = 0, kucuk = 0, kes = 0, cete = 0;
+    const rows = document.querySelectorAll("#table-body tr");
+    rows.forEach(row => {
+      const inputs = row.querySelectorAll("input");
+      toroman += parseFloat(inputs[3].value) || 0;
+      kucuk += parseFloat(inputs[7].value) || 0;
+      kes += parseFloat(inputs[11].value) || 0;
+      cete += parseFloat(inputs[15].value) || 0;
+    });
+    document.getElementById("toroman-total").textContent = toroman.toFixed(2);
+    document.getElementById("kucuk-total").textContent = kucuk.toFixed(2);
+    document.getElementById("kes-total").textContent = kes.toFixed(2);
+    document.getElementById("cete-total").textContent = cete.toFixed(2);
+  }
+  setInterval(calculateTotals, 500);
+</script>
 
 </body>
 </html>
