@@ -24,11 +24,18 @@
     h2 {
       text-align: center;
     }
+    .filter-container {
+      text-align: center;
+      margin: 20px auto;
+    }
+    .filter-container input {
+      padding: 6px;
+      font-size: 14px;
+    }
     button.download-btn {
       padding: 6px 10px;
       cursor: pointer;
     }
-    /* PDF tablosu için özel stil */
     .pdf-table, .pdf-table th, .pdf-table td {
       border: 1px solid #000;
       border-collapse: collapse;
@@ -46,6 +53,9 @@
 <body>
 
 <h2>Kayıtlı Tarihler</h2>
+<div class="filter-container">
+  <input type="text" id="filter-input" placeholder="Tarih filtrele (yyyy-aa-gg)">
+</div>
 <table id="date-table">
   <thead>
     <tr>
@@ -56,30 +66,39 @@
   <tbody id="date-body"></tbody>
 </table>
 
-<!-- Gizli tablo sadece PDF oluşturmak için -->
 <div id="hidden-table-container" style="display: none;"></div>
 
 <script>
   const savedTables = JSON.parse(localStorage.getItem("tables") || "{}");
   const dateBody = document.getElementById("date-body");
+  const filterInput = document.getElementById("filter-input");
 
-  Object.keys(savedTables).sort().forEach(date => {
-    const tr = document.createElement("tr");
+  function renderDateRows(filter = "") {
+    dateBody.innerHTML = "";
+    Object.keys(savedTables).sort().forEach(date => {
+      if (filter && !date.includes(filter)) return;
+      const tr = document.createElement("tr");
+      const tdDate = document.createElement("td");
+      tdDate.textContent = date;
 
-    const tdDate = document.createElement("td");
-    tdDate.textContent = date;
+      const tdAction = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.textContent = "PDF İndir";
+      btn.className = "download-btn";
+      btn.onclick = () => generatePDF(date);
 
-    const tdAction = document.createElement("td");
-    const btn = document.createElement("button");
-    btn.textContent = "PDF İndir";
-    btn.className = "download-btn";
-    btn.onclick = () => generatePDF(date);
+      tdAction.appendChild(btn);
+      tr.appendChild(tdDate);
+      tr.appendChild(tdAction);
+      dateBody.appendChild(tr);
+    });
+  }
 
-    tdAction.appendChild(btn);
-    tr.appendChild(tdDate);
-    tr.appendChild(tdAction);
-    dateBody.appendChild(tr);
+  filterInput.addEventListener("input", () => {
+    renderDateRows(filterInput.value);
   });
+
+  renderDateRows();
 
   function generatePDF(date) {
     const data = savedTables[date];
@@ -115,31 +134,49 @@
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
+    let toromanTotal = 0, kucukTotal = 0, kesTotal = 0, ceteTotal = 0;
+
     data.forEach((row, i) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${i + 1}</td>`;
-      row.forEach(cell => {
+      row.forEach((cell, index) => {
         const td = document.createElement("td");
         td.textContent = cell;
         tr.appendChild(td);
+
+        if (index === 3) toromanTotal += parseFloat(cell) || 0;
+        if (index === 7) kucukTotal += parseFloat(cell) || 0;
+        if (index === 11) kesTotal += parseFloat(cell) || 0;
+        if (index === 15) ceteTotal += parseFloat(cell) || 0;
       });
       tbody.appendChild(tr);
     });
 
+    const totalRow = document.createElement("tr");
+    totalRow.innerHTML = `
+      <td colspan="4"><strong>Toroman Toplam:</strong></td>
+      <td><strong>${toromanTotal.toFixed(2)} kg</strong></td>
+      <td colspan="4"><strong>Küçük Toplam:</strong></td>
+      <td><strong>${kucukTotal.toFixed(2)} kg</strong></td>
+      <td colspan="4"><strong>Keş Toplam:</strong></td>
+      <td><strong>${kesTotal.toFixed(2)} kg</strong></td>
+      <td colspan="1"><strong>Çete Toplam:</strong></td>
+      <td><strong>${ceteTotal.toFixed(2)} kg</strong></td>
+    `;
+
+    tbody.appendChild(totalRow);
     table.appendChild(tbody);
     container.appendChild(table);
 
-    // Tabloyu geçici olarak görünür yap
     container.style.display = "block";
 
     html2canvas(container, { scale: 2 }).then(canvas => {
       const imgData = canvas.toDataURL("image/png");
-
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("l", "mm", "a4"); // landscape yön
+      const doc = new jsPDF("l", "mm", "a4");
 
       const pageWidth = doc.internal.pageSize.getWidth();
-      const imgWidth = pageWidth - 20; // sağ/sol boşluklar
+      const imgWidth = pageWidth - 20;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       doc.setFont("times", "normal");
@@ -160,10 +197,8 @@
   }
 
   function formatDate(dateString) {
-    const months = [
-      "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-      "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
-    ];
+    const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+      "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
     const date = new Date(dateString);
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   }
