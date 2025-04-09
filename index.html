@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Üretim Takip Tablosu</title>
-  <link rel="apple-touch-icon" href="icon.png">
   <link rel="stylesheet" href="styles.css">
-  <script src="index.js" defer></script>
   <style>
     body {
       font-family: Arial;
@@ -80,17 +78,130 @@
       font-weight: bold;
       background-color: #f4f4f4;
     }
-    .button-container button {
-    font-size: 140%;
-  }
   </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB8Bs2Avhj9p4A6SceFwO7G_09sqZgEkiI",
+      authDomain: "maysorti.firebaseapp.com",
+      projectId: "maysorti",
+      storageBucket: "maysorti.appspot.com",
+      messagingSenderId: "688839123721",
+      appId: "1:688839123721:web:86d91aa39ed05e444829d8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function createCell(type, value = '') {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      if (type === 'time') input.type = 'time';
+      else if (type === 'product') input.type = 'text';
+      else { input.type = 'number'; input.step = '0.01'; }
+      input.value = value;
+      td.appendChild(input);
+      return td;
+    }
+
+    function addRow(data = []) {
+      const tbody = document.getElementById('table-body');
+      const rowCount = tbody.rows.length + 1;
+      const tr = document.createElement('tr');
+
+      const tdIndex = document.createElement('td');
+      tdIndex.textContent = rowCount;
+      tr.appendChild(tdIndex);
+
+      for (let i = 0; i < 16; i++) {
+        let value = data[i] || '';
+        if (i % 4 === 0 || i % 4 === 1) tr.appendChild(createCell('time', value));
+        else if (i % 4 === 2) tr.appendChild(createCell('product', value));
+        else tr.appendChild(createCell('number', value));
+      }
+
+      tbody.appendChild(tr);
+    }
+
+    function openModal() {
+      document.getElementById("myModal").style.display = "block";
+    }
+
+    function closeModal() {
+      document.getElementById("myModal").style.display = "none";
+    }
+
+    async function saveData() {
+    const date = document.getElementById("save-date").value;
+    if (!date) {
+      alert("Lütfen bir tarih girin.");
+      return;
+    }
+
+    const rows = document.querySelectorAll("#table-body tr");
+    const data = [];
+
+    rows.forEach(row => {
+     const inputs = row.querySelectorAll("input");
+     const rowData = {};
+     for (let i = 0; i < inputs.length; i++) {
+       rowData[`col${i}`] = inputs[i].value;
+     }
+     data.push(rowData);
+    });
+
+  try {
+    await setDoc(doc(db, "uretimTablosu", date), { data });
+    alert(`Veriler Firestore'a "${date}" olarak kaydedildi.`);
+    document.getElementById("table-body").innerHTML = "";
+    closeModal();
+  } catch (error) {
+    console.error("Firestore kayıt hatası:", error);
+    alert("Kayıt sırasında hata oluştu.");
+  }
+}
+
+
+    function calculateTotals() {
+      let toroman = 0, kucuk = 0, kes = 0, cete = 0;
+      const rows = document.querySelectorAll("#table-body tr");
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        toroman += parseFloat(inputs[3].value) || 0;
+        kucuk += parseFloat(inputs[7].value) || 0;
+        kes += parseFloat(inputs[11].value) || 0;
+        cete += parseFloat(inputs[15].value) || 0;
+      });
+      document.getElementById("toroman-total").textContent = toroman.toFixed(2);
+      document.getElementById("kucuk-total").textContent = kucuk.toFixed(2);
+      document.getElementById("kes-total").textContent = kes.toFixed(2);
+      document.getElementById("cete-total").textContent = cete.toFixed(2);
+    }
+
+    window.onload = () => {
+      for (let i = 0; i < 20; i++) addRow();
+      document.getElementById("add-row-btn").addEventListener("click", addRow);
+      document.getElementById("open-modal-btn").addEventListener("click", openModal);
+      document.getElementById("save-btn").addEventListener("click", saveData);
+      setInterval(calculateTotals, 500);
+    };
+
+    window.onclick = function (event) {
+      if (event.target === document.getElementById("myModal")) {
+        closeModal();
+      }
+    };
+  </script>
 </head>
 <body>
 
 <div class="header-container">
   <h2>Üretim Takip Tablosu</h2>
   <div class="button-container">
-    <button onclick="openModal()">Kaydet</button>
+    <button id="open-modal-btn">Kaydet</button>
     <button onclick="window.location.href='sortiler.html'">Sortiler</button>
   </div>
 </div>
@@ -105,30 +216,16 @@
       <th class="group-header" colspan="4">Çete</th>
     </tr>
     <tr>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
-      <th class="sub-header">Giriş</th>
-      <th class="sub-header">Çıkış</th>
-      <th class="sub-header">Ürün</th>
-      <th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th><th class="sub-header">Çıkış</th><th class="sub-header">Ürün</th><th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th><th class="sub-header">Çıkış</th><th class="sub-header">Ürün</th><th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th><th class="sub-header">Çıkış</th><th class="sub-header">Ürün</th><th class="sub-header">Kg</th>
+      <th class="sub-header">Giriş</th><th class="sub-header">Çıkış</th><th class="sub-header">Ürün</th><th class="sub-header">Kg</th>
     </tr>
   </thead>
   <tbody id="table-body"></tbody>
   <tfoot>
     <tr class="add-button-row">
-      <td colspan="17">
-        <button onclick="addRow()">+</button>
-      </td>
+      <td colspan="17"><button id="add-row-btn">+</button></td>
     </tr>
     <tr id="totals-row">
       <td colspan="4">Toroman Toplam</td>
@@ -150,28 +247,9 @@
     <h3>Kayıt Tarihi Girin</h3>
     <input type="date" id="save-date" />
     <br><br>
-    <button onclick="saveData()">Kaydet</button>
+    <button id="save-btn">Kaydet</button>
   </div>
 </div>
-
-<script>
-  function calculateTotals() {
-    let toroman = 0, kucuk = 0, kes = 0, cete = 0;
-    const rows = document.querySelectorAll("#table-body tr");
-    rows.forEach(row => {
-      const inputs = row.querySelectorAll("input");
-      toroman += parseFloat(inputs[3].value) || 0;
-      kucuk += parseFloat(inputs[7].value) || 0;
-      kes += parseFloat(inputs[11].value) || 0;
-      cete += parseFloat(inputs[15].value) || 0;
-    });
-    document.getElementById("toroman-total").textContent = toroman.toFixed(2);
-    document.getElementById("kucuk-total").textContent = kucuk.toFixed(2);
-    document.getElementById("kes-total").textContent = kes.toFixed(2);
-    document.getElementById("cete-total").textContent = cete.toFixed(2);
-  }
-  setInterval(calculateTotals, 500);
-</script>
 
 </body>
 </html>
