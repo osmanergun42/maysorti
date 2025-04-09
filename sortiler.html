@@ -31,7 +31,7 @@
       padding: 6px;
       font-size: 14px;
     }
-    .download-btn {
+    .download-btn, .delete-btn {
       padding: 6px 12px;
       cursor: pointer;
       background-color: #333;
@@ -39,7 +39,7 @@
       border: none;
       border-radius: 4px;
     }
-    .download-btn:hover {
+    .download-btn:hover, .delete-btn:hover {
       background-color: #555;
     }
     .pdf-table, .pdf-table th, .pdf-table td {
@@ -64,7 +64,6 @@
   <input type="date" id="filter-input" class="filter-input" />
 </div>
 
-
 <table id="date-table">
   <thead>
     <tr>
@@ -79,7 +78,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyB8Bs2Avhj9p4A6SceFwO7G_09sqZgEkiI",
@@ -113,12 +112,18 @@
       tdDate.textContent = date;
 
       const tdAction = document.createElement("td");
-      const btn = document.createElement("button");
-      btn.textContent = "PDF İndir";
-      btn.className = "download-btn";
-      btn.onclick = () => generatePDF(date);
+      const btnDownload = document.createElement("button");
+      btnDownload.textContent = "PDF İndir";
+      btnDownload.className = "download-btn";
+      btnDownload.onclick = () => generatePDF(date);
 
-      tdAction.appendChild(btn);
+      const btnDelete = document.createElement("button");
+      btnDelete.textContent = "Sil";
+      btnDelete.className = "delete-btn";
+      btnDelete.onclick = () => confirmDelete(date);
+
+      tdAction.appendChild(btnDownload);
+      tdAction.appendChild(btnDelete);
       tr.appendChild(tdDate);
       tr.appendChild(tdAction);
       dateBody.appendChild(tr);
@@ -223,6 +228,19 @@
     pdf.addImage(imgData, "PNG", 10, 40, imgWidth, imgHeight);
     pdf.save(`Tablo_${date}.pdf`);
     container.style.display = "none";
+  }
+
+  async function confirmDelete(date) {
+    if (confirm(`Bu tarihi silmek istediğinize emin misiniz? (${date})`)) {
+      try {
+        await deleteDoc(doc(db, "uretimTablosu", date));
+        alert("Kayıt başarıyla silindi.");
+        allDates = allDates.filter(d => d !== date); // Localde de silme işlemi
+        renderTable();
+      } catch (error) {
+        alert("Silme işlemi sırasında bir hata oluştu.");
+      }
+    }
   }
 
   loadDates();
