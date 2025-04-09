@@ -1,25 +1,24 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Kayıtlı Tarihler</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
   <style>
     table {
-      width: 60%;
+      width: 80%;
       margin: auto;
       border-collapse: collapse;
     }
-    td, th {
-      border: 1px solid #ddd;
+    th, td {
+      border: 1px solid #ccc;
       padding: 12px;
       text-align: center;
     }
     tr:hover {
-      background-color: #f2f2f2;
+      background-color: #f9f9f9;
     }
     h2 {
       text-align: center;
@@ -32,9 +31,16 @@
       padding: 6px;
       font-size: 14px;
     }
-    button.download-btn {
-      padding: 6px 10px;
+    .download-btn {
+      padding: 6px 12px;
       cursor: pointer;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    .download-btn:hover {
+      background-color: #555;
     }
     .pdf-table, .pdf-table th, .pdf-table td {
       border: 1px solid #000;
@@ -54,8 +60,11 @@
 
 <h2>Kayıtlı Tarihler</h2>
 <div class="filter-container">
-  <input type="text" id="filter-input" placeholder="Tarih filtrele (yyyy-aa-gg)">
+  <label for="filter-input" class="filter-label">Tarih Filtrele:</label>
+  <input type="date" id="filter-input" class="filter-input" />
 </div>
+
+
 <table id="date-table">
   <thead>
     <tr>
@@ -66,18 +75,40 @@
   <tbody id="date-body"></tbody>
 </table>
 
-<div id="hidden-table-container" style="display: none;"></div>
+<div id="hidden-table-container" style="display:none;"></div>
 
-<script>
-  const savedTables = JSON.parse(localStorage.getItem("tables") || "{}");
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB8Bs2Avhj9p4A6SceFwO7G_09sqZgEkiI",
+    authDomain: "maysorti.firebaseapp.com",
+    projectId: "maysorti",
+    storageBucket: "maysorti.appspot.com",
+    messagingSenderId: "688839123721",
+    appId: "1:688839123721:web:86d91aa39ed05e444829d8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   const dateBody = document.getElementById("date-body");
   const filterInput = document.getElementById("filter-input");
+  let allDates = [];
 
-  function renderDateRows(filter = "") {
+  async function loadDates() {
+    const snapshot = await getDocs(collection(db, "uretimTablosu"));
+    allDates = snapshot.docs.map(doc => doc.id);
+    renderTable();
+  }
+
+  function renderTable(filter = "") {
     dateBody.innerHTML = "";
-    Object.keys(savedTables).sort().forEach(date => {
+    allDates.sort().forEach(date => {
       if (filter && !date.includes(filter)) return;
       const tr = document.createElement("tr");
+
       const tdDate = document.createElement("td");
       tdDate.textContent = date;
 
@@ -95,15 +126,19 @@
   }
 
   filterInput.addEventListener("input", () => {
-    renderDateRows(filterInput.value);
+    renderTable(filterInput.value);
   });
 
-  renderDateRows();
+  async function generatePDF(date) {
+    const docRef = doc(db, "uretimTablosu", date);
+    const docSnap = await getDoc(docRef);
 
-  function generatePDF(date) {
-    const data = savedTables[date];
-    if (!data) return;
+    if (!docSnap.exists()) {
+      alert("Veri bulunamadı.");
+      return;
+    }
 
+    const data = docSnap.data().data;
     const container = document.getElementById("hidden-table-container");
     container.innerHTML = "";
 
@@ -112,96 +147,85 @@
     table.style.width = "100%";
 
     const thead = document.createElement("thead");
-    const headerRow1 = document.createElement("tr");
-    const headerRow2 = document.createElement("tr");
-
-    headerRow1.innerHTML = `
+    const row1 = document.createElement("tr");
+    row1.innerHTML = `
       <th rowspan="2">#</th>
       <th colspan="4">Toroman</th>
       <th colspan="4">Küçük</th>
       <th colspan="4">Keş</th>
       <th colspan="4">Çete</th>
     `;
-    headerRow2.innerHTML = `
+    const row2 = document.createElement("tr");
+    row2.innerHTML = `
       <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
       <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
       <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
       <th>Giriş</th><th>Çıkış</th><th>Ürün</th><th>Kg</th>
     `;
 
-    thead.appendChild(headerRow1);
-    thead.appendChild(headerRow2);
+    thead.appendChild(row1);
+    thead.appendChild(row2);
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    let toromanTotal = 0, kucukTotal = 0, kesTotal = 0, ceteTotal = 0;
 
-    data.forEach((row, i) => {
+    let toroman = 0, kucuk = 0, kes = 0, cete = 0;
+
+    data.forEach((rowData, i) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${i + 1}</td>`;
-      row.forEach((cell, index) => {
+
+      for (let j = 0; j < 16; j++) {
         const td = document.createElement("td");
-        td.textContent = cell;
+        td.textContent = rowData[`col${j}`] || "";
         tr.appendChild(td);
 
-        if (index === 3) toromanTotal += parseFloat(cell) || 0;
-        if (index === 7) kucukTotal += parseFloat(cell) || 0;
-        if (index === 11) kesTotal += parseFloat(cell) || 0;
-        if (index === 15) ceteTotal += parseFloat(cell) || 0;
-      });
+        if (j === 3) toroman += parseFloat(rowData[`col${j}`]) || 0;
+        if (j === 7) kucuk += parseFloat(rowData[`col${j}`]) || 0;
+        if (j === 11) kes += parseFloat(rowData[`col${j}`]) || 0;
+        if (j === 15) cete += parseFloat(rowData[`col${j}`]) || 0;
+      }
+
       tbody.appendChild(tr);
     });
 
     const totalRow = document.createElement("tr");
     totalRow.innerHTML = `
-      <td colspan="4"><strong>Toroman Toplam:</strong></td>
-      <td><strong>${toromanTotal.toFixed(2)} kg</strong></td>
-      <td colspan="4"><strong>Küçük Toplam:</strong></td>
-      <td><strong>${kucukTotal.toFixed(2)} kg</strong></td>
-      <td colspan="4"><strong>Keş Toplam:</strong></td>
-      <td><strong>${kesTotal.toFixed(2)} kg</strong></td>
-      <td colspan="1"><strong>Çete Toplam:</strong></td>
-      <td><strong>${ceteTotal.toFixed(2)} kg</strong></td>
+      <td colspan="4"><strong>Toroman Toplam</strong></td>
+      <td><strong>${toroman.toFixed(2)}</strong></td>
+      <td colspan="3"><strong>Küçük Toplam</strong></td>
+      <td><strong>${kucuk.toFixed(2)}</strong></td>
+      <td colspan="3"><strong>Keş Toplam</strong></td>
+      <td><strong>${kes.toFixed(2)}</strong></td>
+      <td colspan="3"><strong>Çete Toplam</strong></td>
+      <td><strong>${cete.toFixed(2)}</strong></td>
     `;
-
     tbody.appendChild(totalRow);
+
     table.appendChild(tbody);
     container.appendChild(table);
-
     container.style.display = "block";
 
-    html2canvas(container, { scale: 2 }).then(canvas => {
-      const imgData = canvas.toDataURL("image/png");
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("l", "mm", "a4");
+    const canvas = await html2canvas(container, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("l", "mm", "a4");
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.setFontSize(16);
+    pdf.text("Üretim Tablosu", 10, 20);
+    pdf.setFontSize(12);
+    pdf.text(`Tarih: ${date}`, 10, 30);
 
-      doc.setFont("times", "normal");
-      doc.setFontSize(16);
-      doc.text("Kayıtlı Tablolar", 10, 20);
-      doc.setFontSize(12);
-      doc.text(`Tarih: ${formatDate(date)}`, 10, 30);
+    const width = pdf.internal.pageSize.getWidth();
+    const imgWidth = width - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      doc.addImage(imgData, "PNG", 10, 40, imgWidth, imgHeight);
-      doc.save(`Tablo_${date}.pdf`);
-
-      container.style.display = "none";
-    }).catch(error => {
-      console.error("PDF oluşturulurken hata:", error);
-      alert("PDF oluşturulurken bir hata oluştu.");
-      container.style.display = "none";
-    });
+    pdf.addImage(imgData, "PNG", 10, 40, imgWidth, imgHeight);
+    pdf.save(`Tablo_${date}.pdf`);
+    container.style.display = "none";
   }
 
-  function formatDate(dateString) {
-    const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-      "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-    const date = new Date(dateString);
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-  }
+  loadDates();
 </script>
 
 </body>
